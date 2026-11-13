@@ -1,0 +1,26 @@
+# secrets: never commit keys, keystores or env files
+.env
+.env.*
+!.env.example
+*.keystore
+*.pem
+*.key
+keystore*/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+artifacts/
+
+# node
+node_modules/
+.next/
+dist/
+.vercel/
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/
