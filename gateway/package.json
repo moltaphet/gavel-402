@@ -16,6 +16,7 @@
   "dependencies": {
     "@hono/node-server": "^2.1.8",
     "@x402/core": "^2.31.0",
+    "genlayer-js": "github:genlayerlabs/genlayer-js#facd9e9dc9a289d0110fe3b5b1a14a2938fe6e01",
     "hono": "^4.13.18"
   },
   "devDependencies": {
