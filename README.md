@@ -2,36 +2,45 @@
 
 **Agents pay only for proof.**
 
-Gavel is an escrow gateway for agent payments on [Kite](https://docs.gokite.ai). When an AI agent pays a paid API over x402, the money normally moves before anyone knows whether the answer was any good. Gavel holds the payment until the delivery is judged.
+Gavel is an escrow gateway for agent payments on [Kite](https://docs.gokite.ai). When an AI agent pays a paid API over x402, the money normally moves before anyone knows whether the answer was any good. Gavel verifies the payment but holds it until the delivery is judged.
 
-Built for the [SERV Hackathon, Edition 02](https://www.openserv.ai/hackathon-2) (Kite track).
+Built for the [SERV Hackathon, Edition 02](https://www.openserv.ai/hackathon-2), Kite track.
 
 ## How it works
 
-1. The agent calls a paid API through the Gavel gateway and sends an x402 payment authorization. The facilitator **verifies** it, but nothing is **settled** yet.
+1. The agent calls a paid API through the gateway with an x402 payment authorization. The facilitator **verifies** it. Nothing settles yet.
 2. The seller does the work.
-3. **Fast judge (SERV Reasoning)** checks the result against the delivery spec the seller promised. If it passes and nobody objects, the payment is settled.
-4. **Appeal court (GenLayer)**: either side can dispute the verdict. The case goes to the `DeliveryJudge` intelligent contract, validators reach a final `ACCEPT` / `REJECT` by consensus, and the gateway settles only on `ACCEPT`. It currently runs on GenLayer **studio-next**; Bradbury is not deployed yet (see `contracts/DEPLOYMENTS.md`).
+3. **First-pass judge (SERV Reasoning)** compares the delivery with the spec the seller promised.
+   - ACCEPT and no one objects: the payment settles and the delivery is released.
+   - REJECT: nothing settles and the body is withheld.
+4. **Appeal court (GenLayer `DeliveryJudge`)**: either side can dispute the verdict. Validators decide by consensus, and money moves only on a final ACCEPT.
+   - Seller appeals a REJECT.
+   - Buyer appeals an ACCEPT during an optional appeal window.
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `contracts/` | GenLayer intelligent contract (`DeliveryJudge`) |
-| `tests/direct/` | Direct-mode tests for the contract |
-| `gateway/` | x402 gateway + SERV Reasoning judge (TypeScript, Hono) |
-| `web/` | Dashboard (planned) |
+| `gateway/` | x402 gateway in TypeScript (Hono). Verify, call the seller, judge, settle or withhold, appeal. |
+| `contracts/` | `DeliveryJudge` intelligent contract for GenLayer, plus `DEPLOYMENTS.md` |
+| `contracts/tests/direct/` | Direct-mode tests for the contract (written, not yet run) |
+| `web/` | Courtroom dashboard: a 3D replay of recorded cases (Next.js, React Three Fiber) |
 
 ## Status
 
-Work in progress during the hackathon (build period ends 2026-11-15).
+| Part | State |
+|---|---|
+| Gateway | 50 unit tests pass. The SERV judge and the GenLayer court client were each run live on small samples. **Not run** against the Kite facilitator with a real signed payment. |
+| `DeliveryJudge` contract | Lints clean. Deployed on GenLayer **studio-dev** (`0x03cCab04532d59D09c95f555F2AA38f435A48e8E`) and studio-next. Calibration scored 9/9 on studio-next. Not deployed to Bradbury. |
+| Contract unit tests | Written, **not run**: the installed `genlayer-test` does not load the pinned runner. |
+| Dashboard | Builds, and was checked in a browser at desktop and phone width. It replays recorded runs, **payments are simulated**, and it is not connected to the gateway. |
+| Kite payment | **Not done.** The test faucet gives KITE only, and the gateway needs pieUSD. |
 
-- `DeliveryJudge` passes `genvm-lint` and is deployed on studio-next. It got 9/9 on a live calibration set (one run each, one spec). Its direct-mode unit tests are written but **not run** locally (tooling mismatch).
-- `gateway/`: verify, upstream call, SERV judge, settle-or-withhold, and the appeal flow (seller and buyer, optional appeal window) are implemented with 50 passing unit tests. Facilitator, seller and court are mocked in those; the SERV judge and the GenLayer court client were each also exercised live on small samples.
-- **Never run:** the gateway against the real Kite facilitator or a real signed payment (no pieUSD yet), or gateway + live court together. Whether a signed authorization stays settleable through an appeal window is untested.
-- Not deployed to Bradbury. The dashboard is not started.
+Addresses and history are in [`contracts/DEPLOYMENTS.md`](contracts/DEPLOYMENTS.md).
 
-## Run the gateway
+## Run it
+
+Gateway:
 
 ```bash
 cd gateway
@@ -41,23 +50,37 @@ npm test
 npm run dev
 ```
 
-Flow per request to `/v1/*`: no payment header -> `402` with requirements; with payment -> facilitator **verify** -> call the seller -> SERV judge -> `ACCEPT`: **settle** and deliver, `REJECT`: nothing settles, body withheld, case recorded at `GET /gavel/cases/:id`. If the judge or seller fails, nothing settles.
+Flow per request to `/v1/*`: no payment header returns `402` with the requirements. With a payment, the gateway verifies it, calls the seller, judges, and then settles or withholds. If the judge or the seller fails, nothing settles.
 
-## Appeals
+Appeals are enabled by setting `GENLAYER_CONTRACT`, `GENLAYER_PRIVATE_KEY`, and `ADMIN_TOKEN` (see `gateway/.env.example`). Without them, appeal endpoints return `501`.
 
-Set `GENLAYER_CONTRACT`, `GENLAYER_PRIVATE_KEY` (and `GENLAYER_RPC_URL`, `GENLAYER_NETWORK`) to enable the court, and `ADMIN_TOKEN` so the seller can appeal. Without them appeals return `501`.
+- Seller appeal: `POST /gavel/cases/:id/appeal` with the admin token, for a REJECT.
+- Buyer appeal: the same endpoint with the `case_token` from the response, for an ACCEPT inside the window (`APPEAL_WINDOW_SECONDS`).
+- Court ACCEPT settles the held payment. Court REJECT is final.
 
-| Who | Can appeal | Credential |
-|---|---|---|
-| Seller (gateway operator) | a `REJECT` | `Authorization: Bearer $ADMIN_TOKEN` |
-| Buyer | an `ACCEPT` that is still inside the appeal window | the `case_token` from their response |
+Dashboard:
 
-- Default `APPEAL_WINDOW_SECONDS=0`: an `ACCEPT` settles at once, so there is nothing for a buyer to appeal. With a window `> 0` the `ACCEPT` is held (`202`) and the body withheld until the window ends, the buyer calls `POST /gavel/cases/:id/accept`, or an appeal settles it. `MAX_TIMEOUT_SECONDS` must be at least window + 180 so the signed payment outlives the court.
-- `POST /gavel/cases/:id/appeal` sends the case to the court. Court `ACCEPT` settles the held payment; court `REJECT` is final and nothing settles. `GET /gavel/cases/:id/delivery` (buyer token) releases the body only after settlement.
-- A court that errors never settles anything; the case goes back to its previous state and can be retried.
+```bash
+cd web
+npm install
+npm run dev   # http://localhost:3000
+```
 
-Caveats: the spec and deliverable (up to 4000 / 8000 characters) are written to a **public** chain when appealed. The gateway operator pays court fees. Cases and withheld bodies live **in memory** only and are lost on restart.
+Pick a case and the courtroom replays it. "What is real?" lists what is recorded and what is simulated.
+
+Contract tests (not yet runnable here):
+
+```bash
+genvm-lint check contracts/delivery_judge.py
+```
+
+## Caveats
+
+- Appeal content (spec and deliverable, up to 4000 and 8000 characters) is posted to a **public** chain.
+- Cases and withheld bodies are held in memory and are lost on restart.
+- The GenLayer validator set in the dashboard is illustrative. Only the verdicts are real.
+- Network constants (token address, chain ID) are copied from a community template and need checking against the Kite docs before mainnet use.
 
 ## Security
 
-Never commit private keys, keystores or `.env` files. See `.gitignore`.
+Never commit private keys, keystores, or `.env` files. `.gitignore` covers them. Testnet keys used here live in the local OS keychain and `~/.genlayer`, not in the repo.
