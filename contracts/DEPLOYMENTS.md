@@ -59,3 +59,31 @@ Changes: the first-pass verdict is no longer shown to validators; the model must
 ### Not deployed
 
 - Bradbury (Phase 2): the deployer account holds 0 GEN and the faucet needs a GitHub login and mainnet ETH.
+
+## studio-dev (GenLayer Studio devnet, chain ID 61997)
+
+| | |
+|---|---|
+| Contract | `DeliveryJudge` (`contracts/delivery_judge.py`, calibrated prompt) |
+| Address | `0x03cCab04532d59D09c95f555F2AA38f435A48e8E` |
+| RPC | `https://studio-dev.genlayer.com/api` |
+| Explorer | https://explorer-studio-dev.genlayer.com |
+| Deployer | `0x3b5e488C32e69673D5054e881E105CB690C9E80b` (testnet-only) |
+
+Calibration on live consensus, one run each, same spec and cases as studio-next:
+
+| Case | Want | Got |
+|---|---|---|
+| a1 full-sentence summaries | ACCEPT | ACCEPT |
+| a2 short summaries | ACCEPT | ACCEPT |
+| a3 `url: summary` lines | ACCEPT | ACCEPT |
+| r1 lorem ipsum | REJECT | REJECT |
+| r2 only 2 sources | REJECT | REJECT |
+| r3 cats/dogs/birds | REJECT | REJECT |
+| r4 prompt injection | REJECT | REJECT |
+| r5 URLs without summaries | REJECT | REJECT |
+| r6 `N/A` | REJECT | REJECT |
+
+**9 of 9 correct**, matching studio-next. Same limits as before: one run per case, one spec.
+
+Deploy: `genlayer deploy --rpc https://studio-dev.genlayer.com/api --contract contracts/delivery_judge.py --fees '<distribution>' --fee-value <feeValue>`, with fees from `genlayer estimate-fees --rpc ... --json --fee-preset standard`.
