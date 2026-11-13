@@ -19,7 +19,7 @@ Built for the [SERV Hackathon, Edition 02](https://www.openserv.ai/hackathon-2) 
 |---|---|
 | `contracts/` | GenLayer intelligent contract (`DeliveryJudge`) |
 | `tests/direct/` | Direct-mode tests for the contract |
-| `gateway/` | x402 gateway + SERV Reasoning judge (planned) |
+| `gateway/` | x402 gateway + SERV Reasoning judge (TypeScript, Hono) |
 | `web/` | Dashboard (planned) |
 
 ## Status
@@ -27,8 +27,20 @@ Built for the [SERV Hackathon, Edition 02](https://www.openserv.ai/hackathon-2) 
 Work in progress during the hackathon (build period ends 2026-11-15).
 
 - `DeliveryJudge` passes `genvm-lint`. Its direct-mode tests are written but **not yet run** (tooling mismatch), so its behavior is untested.
-- Nothing is deployed yet.
-- Gateway and dashboard are not started.
+- `gateway/`: verify, upstream call, SERV judge, settle-or-withhold flow is implemented with 21 passing unit tests (facilitator, seller and judge are mocked). The SERV judge was also checked live on 5 sample deliveries. The gateway has **not** been run against the real Kite facilitator or a real signed payment yet, and the GenLayer appeal path is not wired in.
+- Nothing is deployed yet. The dashboard is not started.
+
+## Run the gateway
+
+```bash
+cd gateway
+npm install
+cp .env.example .env   # set SERV_API_KEY, PAY_TO, UPSTREAM_URL
+npm test
+npm run dev
+```
+
+Flow per request to `/v1/*`: no payment header -> `402` with requirements; with payment -> facilitator **verify** -> call the seller -> SERV judge -> `ACCEPT`: **settle** and deliver, `REJECT`: nothing settles, body withheld, case recorded at `GET /gavel/cases/:id`. If the judge or seller fails, nothing settles.
 
 ## Security
 
