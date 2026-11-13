@@ -59,3 +59,17 @@ Changes: the first-pass verdict is no longer shown to validators; the model must
 ### Not deployed
 
 - Bradbury (Phase 2): the deployer account holds 0 GEN and the faucet needs a GitHub login and mainnet ETH.
+
+## studio-dev (GenLayer Studio devnet, chain ID 61997)
+
+| | |
+|---|---|
+| Contract | `DeliveryJudge` (`contracts/delivery_judge.py`, calibrated prompt) |
+| Address | `0x03cCab04532d59D09c95f555F2AA38f435A48e8E` |
+| RPC | `https://studio-dev.genlayer.com/api` |
+| Explorer | https://explorer-studio-dev.genlayer.com |
+| Deployer | `0x3b5e488C32e69673D5054e881E105CB690C9E80b` (testnet-only) |
+
+Smoke test on live consensus (2 cases, one run each): a lorem-ipsum delivery -> `REJECT`; a correct 3-source delivery -> `ACCEPT`. Only two cases; the full 9-case calibration set has not been rerun on this deployment.
+
+Deploy: `genlayer deploy --rpc https://studio-dev.genlayer.com/api --contract contracts/delivery_judge.py --fees '<distribution>' --fee-value <feeValue>`, with fees from `genlayer estimate-fees --rpc ... --json --fee-preset standard`.
