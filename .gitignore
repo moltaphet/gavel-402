@@ -24,3 +24,8 @@ dist/
 .DS_Store
 .idea/
 .vscode/
+
+# next.js generated files
+next-env.d.ts
+tsconfig.tsbuildinfo
+web/AGENTS.md
