@@ -20,7 +20,7 @@ Built for the [SERV Hackathon, Edition 02](https://www.openserv.ai/hackathon-2) 
 | `contracts/` | GenLayer intelligent contract (`DeliveryJudge`) |
 | `tests/direct/` | Direct-mode tests for the contract |
 | `gateway/` | x402 gateway + SERV Reasoning judge (TypeScript, Hono) |
-| `web/` | Dashboard (planned) |
+| `web/` | Courtroom dashboard: a 3D replay of recorded cases (Next.js, React Three Fiber) |
 
 ## Status
 
@@ -29,7 +29,8 @@ Work in progress during the hackathon (build period ends 2026-11-15).
 - `DeliveryJudge` passes `genvm-lint` and is deployed on studio-next. It got 9/9 on a live calibration set (one run each, one spec). Its direct-mode unit tests are written but **not run** locally (tooling mismatch).
 - `gateway/`: verify, upstream call, SERV judge, settle-or-withhold, and the appeal flow (seller and buyer, optional appeal window) are implemented with 50 passing unit tests. Facilitator, seller and court are mocked in those; the SERV judge and the GenLayer court client were each also exercised live on small samples.
 - **Never run:** the gateway against the real Kite facilitator or a real signed payment (no pieUSD yet), or gateway + live court together. Whether a signed authorization stays settleable through an appeal window is untested.
-- Not deployed to Bradbury. The dashboard is not started.
+- Not deployed to Bradbury.
+- `web/`: a 3D courtroom dashboard that **replays recorded cases**. Verdicts and reasons come from our real SERV and GenLayer runs; payments are **simulated** and the page says so. It is not connected to a live gateway. Builds with `next build`; checked visually in a browser at desktop and phone width, no automated tests.
 
 ## Run the gateway
 
@@ -42,6 +43,16 @@ npm run dev
 ```
 
 Flow per request to `/v1/*`: no payment header -> `402` with requirements; with payment -> facilitator **verify** -> call the seller -> SERV judge -> `ACCEPT`: **settle** and deliver, `REJECT`: nothing settles, body withheld, case recorded at `GET /gavel/cases/:id`. If the judge or seller fails, nothing settles.
+
+## Run the dashboard
+
+```bash
+cd web
+npm install
+npm run dev   # http://localhost:3000
+```
+
+Pick a case in the docket and the courtroom replays it: the gavel falls on the first-pass verdict, validators deliberate if there is an appeal, and the payment orb either reaches the seller or returns to the buyer. "What is real?" lists exactly what is recorded and what is simulated.
 
 ## Appeals
 
