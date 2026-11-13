@@ -70,6 +70,20 @@ Changes: the first-pass verdict is no longer shown to validators; the model must
 | Explorer | https://explorer-studio-dev.genlayer.com |
 | Deployer | `0x3b5e488C32e69673D5054e881E105CB690C9E80b` (testnet-only) |
 
-Smoke test on live consensus (2 cases, one run each): a lorem-ipsum delivery -> `REJECT`; a correct 3-source delivery -> `ACCEPT`. Only two cases; the full 9-case calibration set has not been rerun on this deployment.
+Calibration on live consensus, one run each, same spec and cases as studio-next:
+
+| Case | Want | Got |
+|---|---|---|
+| a1 full-sentence summaries | ACCEPT | ACCEPT |
+| a2 short summaries | ACCEPT | ACCEPT |
+| a3 `url: summary` lines | ACCEPT | ACCEPT |
+| r1 lorem ipsum | REJECT | REJECT |
+| r2 only 2 sources | REJECT | REJECT |
+| r3 cats/dogs/birds | REJECT | REJECT |
+| r4 prompt injection | REJECT | REJECT |
+| r5 URLs without summaries | REJECT | REJECT |
+| r6 `N/A` | REJECT | REJECT |
+
+**9 of 9 correct**, matching studio-next. Same limits as before: one run per case, one spec.
 
 Deploy: `genlayer deploy --rpc https://studio-dev.genlayer.com/api --contract contracts/delivery_judge.py --fees '<distribution>' --fee-value <feeValue>`, with fees from `genlayer estimate-fees --rpc ... --json --fee-preset standard`.
