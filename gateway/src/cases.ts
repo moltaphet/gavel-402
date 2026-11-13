@@ -2,8 +2,11 @@ import type { PaymentPayload, PaymentRequirements } from "@x402/core/types";
 import type { Verdict } from "./judge.js";
 
 export type CaseStatus =
-  | "settled" // judged ACCEPT and paid
-  | "rejected" // judged REJECT: payment held, nothing delivered
+  | "settled" // paid and deliverable released
+  | "rejected" // judged REJECT: payment held, nothing delivered (seller may appeal)
+  | "accepted_pending" // judged ACCEPT inside an appeal window: payment held (buyer may appeal)
+  | "appeal_pending" // sent to the court, awaiting consensus
+  | "appeal_rejected" // court said REJECT: final, nothing settles
   | "upstream_failed" // seller errored or timed out: payment never settled
   | "unjudged" // judge unavailable: fail closed, payment never settled
   | "settle_failed"; // judged ACCEPT but settlement failed: nothing delivered
@@ -16,21 +19,45 @@ export interface Case {
   amount: string;
   network: string;
   payer?: string;
+  /** First-pass (SERV) verdict. */
   verdict?: Verdict;
   reason?: string;
   upstreamStatus?: number;
   transaction?: string;
+  /** When an accepted_pending payment is released if nobody appeals. */
+  releaseAt?: string;
+  /** Appeal outcome from the GenLayer court. */
+  appealBy?: "buyer" | "seller";
+  appealVerdict?: Verdict;
+  appealReason?: string;
+  appealTxs?: string[];
 }
 
-/** Internal: the signed authorization we keep so a later appeal can still settle it. Never exposed. */
+/** Internal: the signed authorization we keep so a later release or appeal can still settle it. Never exposed. */
 export interface HeldPayment {
   payload: PaymentPayload;
   requirements: PaymentRequirements;
 }
 
+/** Internal: the withheld response and the buyer's secret. Never exposed through the public case record. */
+export interface HeldDelivery {
+  bytes: Uint8Array;
+  contentType: string;
+  upstreamStatus: number;
+  /** Text shown to the judge/court. */
+  text: string;
+  /** Buyer's secret for this case: proves they are the payer when appealing or collecting. */
+  token: string;
+  /** Epoch ms when an accepted_pending payment is released. */
+  releaseAtMs?: number;
+  /** Encoded PAYMENT-RESPONSE header, set once settled. */
+  paymentResponse?: string;
+}
+
 export class CaseStore {
   private readonly cases = new Map<string, Case>();
   private readonly held = new Map<string, HeldPayment>();
+  private readonly deliveries = new Map<string, HeldDelivery>();
   private readonly claimed = new Set<string>();
 
   add(c: Case, held?: HeldPayment): void {
@@ -49,6 +76,18 @@ export class CaseStore {
 
   getHeld(id: string): HeldPayment | undefined {
     return this.held.get(id);
+  }
+
+  setDelivery(id: string, d: HeldDelivery): void {
+    this.deliveries.set(id, d);
+  }
+
+  getDelivery(id: string): HeldDelivery | undefined {
+    return this.deliveries.get(id);
+  }
+
+  deleteDelivery(id: string): void {
+    this.deliveries.delete(id);
   }
 
   /** Reserve a payment nonce so the same signed authorization cannot be used twice at once. */
