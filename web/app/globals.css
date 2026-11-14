@@ -575,3 +575,104 @@ button {
     animation: none !important;
   }
 }
+
+/* ------------------------------------------------------------ try it live */
+
+.live {
+  overflow: auto;
+}
+
+.live-note {
+  margin-top: 6px;
+  font-size: 13px;
+  color: rgba(238, 227, 203, 0.75);
+}
+
+.field {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--brass);
+}
+
+.field textarea {
+  width: 100%;
+  padding: 8px 10px;
+  background: rgba(11, 8, 7, 0.7);
+  border: 1px solid var(--brass-dim);
+  color: var(--parchment);
+  font: 13px/1.45 ui-monospace, "SF Mono", Menlo, monospace;
+  resize: vertical;
+}
+
+.field textarea:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+.live-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.live-actions .btn:disabled {
+  opacity: 0.4;
+}
+
+.live-result {
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(200, 162, 90, 0.35);
+}
+
+.live-result h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brass);
+}
+
+.live-result .stamp {
+  color: var(--parchment);
+  border-color: currentColor;
+}
+
+.live-result .stamp.ok {
+  color: var(--accept);
+}
+
+.live-result .stamp.no {
+  color: #e8736b;
+}
+
+.live-result .reason {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.live-result .sources {
+  margin-top: 8px;
+}
+
+.live-result .sources li::before {
+  background: var(--brass);
+}
+
+.live-wait {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--brass);
+}
+
+.live-error {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #f0b9b4;
+}
+
+.live-foot {
+  margin-top: 16px;
+}

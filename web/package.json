@@ -15,6 +15,7 @@
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",
     "@react-three/postprocessing": "^3.2.2",
+    "genlayer-js": "github:genlayerlabs/genlayer-js#facd9e9dc9a289d0110fe3b5b1a14a2938fe6e01",
     "next": "^16.4.6",
     "postprocessing": "^6.39.6",
     "react": "^19.3.1",

@@ -41,7 +41,12 @@ export { finalVerdict };
 
 export function useProceedings(initialId: string) {
   const [scenarioId, setScenarioId] = useState(initialId);
-  const scenario = useMemo(() => SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[0]!, [scenarioId]);
+  // A live run from the "try it" panel replaces the recorded case until the user picks another one.
+  const [custom, setCustom] = useState<Scenario | null>(null);
+  const scenario = useMemo(
+    () => custom ?? SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[0]!,
+    [custom, scenarioId],
+  );
   const [stepIndex, setStepIndex] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [finished, setFinished] = useState(false);
@@ -122,7 +127,11 @@ export function useProceedings(initialId: string) {
     playing,
     finished,
     live,
-    selectScenario: setScenarioId,
+    selectScenario: (id: string) => {
+      setCustom(null);
+      setScenarioId(id);
+    },
+    playCustom: (next: Scenario) => setCustom(next),
     togglePlay: () => setPlaying((p) => !p),
     seek,
     replay,
