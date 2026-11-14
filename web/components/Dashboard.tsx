@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import { SCENARIOS, finalVerdict, type PhaseId, type Scenario, type Step } from "@/lib/scenarios";
 import { useProceedings, useReducedMotion } from "@/lib/proceedings";
+import { LivePanel } from "./LivePanel";
 
 const CourtCanvas = dynamic(() => import("./court/CourtCanvas"), {
   ssr: false,
@@ -156,6 +157,7 @@ export default function Dashboard() {
   const reduced = useReducedMotion();
   const [follow, setFollow] = useState(true);
   const [showReal, setShowReal] = useState(false);
+  const [showLive, setShowLive] = useState(false);
   const step = p.steps[p.stepIndex]!;
 
   return (
@@ -171,13 +173,20 @@ export default function Dashboard() {
 
       <div className="chips">
         <span className="chip sim">Payment simulated</span>
+        <button type="button" className="chip btn-chip" onClick={() => { setShowLive((v) => !v); setShowReal(false); }} aria-expanded={showLive}>
+          Try it live
+        </button>
         <button type="button" className="chip btn-chip" onClick={() => setShowReal((v) => !v)} aria-expanded={showReal}>
           What is real?
         </button>
       </div>
 
       <Docket current={p.scenario.id} onSelect={p.selectScenario} />
-      <CaseFile scenario={p.scenario} steps={p.steps} stepIndex={p.stepIndex} />
+      {showLive ? (
+        <LivePanel base={p.scenario} onPlay={p.playCustom} onClose={() => setShowLive(false)} />
+      ) : (
+        <CaseFile scenario={p.scenario} steps={p.steps} stepIndex={p.stepIndex} />
+      )}
       {showReal && <RealPanel onClose={() => setShowReal(false)} />}
 
       <footer className="proceedings">
